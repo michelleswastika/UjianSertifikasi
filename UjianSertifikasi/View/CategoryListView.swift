@@ -9,16 +9,21 @@ import SwiftUI
 
 struct CategoryListView: View {
     @StateObject private var viewModel = CategoryViewModel()
-    @State private var newCategoryName: String = "" // For adding a new category
-    @State private var editedCategoryName: String = "" // For editing a category
+    @State private var newCategoryName: String = ""
+    @State private var addErrorMessage: String?
+
     @State private var editingCategoryId: Int? // Track the category being edited
-    @State private var errorMessage: String?
+    @State private var editedCategoryName: String = ""
+    @State private var editErrorMessage: String?
+
+    @State private var generalErrorMessage: String? // General error messages for fetch or delete actions
 
     var body: some View {
         NavigationView {
             VStack {
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
+                // General Error Messages
+                if let generalErrorMessage = generalErrorMessage {
+                    Text(generalErrorMessage)
                         .foregroundColor(.red)
                         .padding()
                 }
@@ -27,19 +32,24 @@ struct CategoryListView: View {
                     ForEach(viewModel.categories) { category in
                         HStack {
                             if editingCategoryId == category.id {
-                                // Inline editing TextField
+                                // Inline editing mode
                                 TextField("Edit Category", text: $editedCategoryName)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .onSubmit {
-                                        saveCategory(category: category)
+                                        validateAndSaveCategory(category: category)
                                     }
+                                if let editErrorMessage = editErrorMessage {
+                                    Text(editErrorMessage)
+                                        .foregroundColor(.red)
+                                        .font(.caption)
+                                }
                                 Spacer()
                                 Button("Save") {
-                                    saveCategory(category: category)
+                                    validateAndSaveCategory(category: category)
                                 }
                                 .buttonStyle(BorderlessButtonStyle())
                             } else {
-                                // Static display with Edit button
+                                // Normal display mode
                                 Text(category.name)
                                 Spacer()
                                 Button("Edit") {
@@ -57,19 +67,17 @@ struct CategoryListView: View {
                     }
                 }
 
-                HStack {
-                    TextField("New Category", text: $newCategoryName) // For adding categories
+                VStack {
+                    // Add New Category Field
+                    TextField("New Category Name", text: $newCategoryName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+                    if let addErrorMessage = addErrorMessage {
+                        Text(addErrorMessage)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
                     Button("Add") {
-                        guard !newCategoryName.isEmpty else { return }
-                        viewModel.addCategory(name: newCategoryName) { error in
-                            if let error = error {
-                                self.errorMessage = "Failed to add category: \(error.localizedDescription)"
-                            } else {
-                                self.errorMessage = nil
-                            }
-                        }
-                        newCategoryName = ""
+                        validateAndAddCategory()
                     }
                 }
                 .padding()
@@ -80,31 +88,46 @@ struct CategoryListView: View {
                     do {
                         try await viewModel.fetchCategories()
                     } catch {
-                        errorMessage = "Failed to load categories: \(error.localizedDescription)"
+                        generalErrorMessage = "Failed to load categories: \(error.localizedDescription)"
                     }
                 }
             }
         }
     }
 
-    // Start editing a category
     private func startEditing(category: Category) {
         editingCategoryId = category.id
-        editedCategoryName = category.name // Initialize the edited name with the category's current name
+        editedCategoryName = category.name
+        editErrorMessage = nil // Clear any previous errors
     }
 
-    // Save the edited category
-    private func saveCategory(category: Category) {
+    private func validateAndSaveCategory(category: Category) {
         guard !editedCategoryName.isEmpty else {
-            errorMessage = "Category name cannot be empty."
+            editErrorMessage = "Category name cannot be empty."
             return
         }
         viewModel.editCategory(id: category.id, newName: editedCategoryName) { error in
             if let error = error {
-                self.errorMessage = "Failed to edit category: \(error.localizedDescription)"
+                generalErrorMessage = "Failed to edit category: \(error.localizedDescription)"
             } else {
-                self.errorMessage = nil
+                generalErrorMessage = nil
                 editingCategoryId = nil // Exit edit mode
+            }
+        }
+    }
+
+    private func validateAndAddCategory() {
+        guard !newCategoryName.isEmpty else {
+            addErrorMessage = "Category name cannot be empty."
+            return
+        }
+        viewModel.addCategory(name: newCategoryName) { error in
+            if let error = error {
+                generalErrorMessage = "Failed to add category: \(error.localizedDescription)"
+            } else {
+                generalErrorMessage = nil
+                newCategoryName = ""
+                addErrorMessage = nil // Clear any errors
             }
         }
     }

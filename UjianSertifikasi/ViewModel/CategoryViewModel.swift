@@ -38,19 +38,7 @@ class CategoryViewModel: ObservableObject {
             }
         }
     }
-
-    // Delete a category
-    func deleteCategory(id: Int) {
-        Task {
-            do {
-                try await DatabaseManager.shared.executeQuery("DELETE FROM categories WHERE id = \(id)")
-                try await fetchCategories()
-            } catch {
-                print("Failed to delete category: \(error)")
-            }
-        }
-    }
-
+    
     // Edit a category
     func editCategory(id: Int, newName: String, completion: @escaping (Error?) -> Void) {
         Task {
@@ -64,6 +52,18 @@ class CategoryViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     completion(error)
                 }
+            }
+        }
+    }
+
+    // Delete a category
+    func deleteCategory(id: Int) {
+        Task {
+            do {
+                try await DatabaseManager.shared.executeQuery("DELETE FROM categories WHERE id = \(id)")
+                try await fetchCategories()
+            } catch {
+                print("Failed to delete category: \(error)")
             }
         }
     }
