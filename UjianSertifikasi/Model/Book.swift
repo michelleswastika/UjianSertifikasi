@@ -7,7 +7,8 @@
 
 struct Book: Identifiable {
     let id: Int
-    var title: String
-    var author: String
-    var memberId: Int?
+    let title: String
+    let author: String
+    let memberId: Int?
+    var categories: [Category]
 }

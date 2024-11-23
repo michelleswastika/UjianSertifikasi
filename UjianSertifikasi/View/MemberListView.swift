@@ -9,21 +9,19 @@ import SwiftUI
 
 struct MemberListView: View {
     @StateObject private var viewModel = MemberViewModel()
+
     @State private var newMemberName: String = ""
     @State private var newMemberEmail: String = ""
-    @State private var addErrorMessage: String?
-
-    @State private var editingMemberId: Int? // Track the member being edited
+    @State private var editingMemberId: Int? = nil
     @State private var editedMemberName: String = ""
     @State private var editedMemberEmail: String = ""
-    @State private var editErrorMessage: String?
 
-    @State private var generalErrorMessage: String? // General error messages for fetch or delete actions
+    @State private var generalErrorMessage: String?
+    @State private var addErrorMessage: String?
 
     var body: some View {
         NavigationView {
             VStack {
-                // General Error Messages
                 if let generalErrorMessage = generalErrorMessage {
                     Text(generalErrorMessage)
                         .foregroundColor(.red)
@@ -32,60 +30,68 @@ struct MemberListView: View {
 
                 List {
                     ForEach(viewModel.members) { member in
-                        HStack {
+                        VStack(alignment: .leading) {
                             if editingMemberId == member.id {
-                                VStack(alignment: .leading) {
-                                    TextField("Edit Name", text: $editedMemberName)
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    TextField("Edit Email", text: $editedMemberEmail)
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    if let editErrorMessage = editErrorMessage {
-                                        Text(editErrorMessage)
-                                            .foregroundColor(.red)
-                                            .font(.caption)
+                                // Editing Mode
+                                TextField("Edit Member Name", text: $editedMemberName)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                TextField("Edit Member Email", text: $editedMemberEmail)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+
+                                HStack {
+                                    Button("Save") {
+                                        validateAndEditMember(member: member)
                                     }
+                                    .buttonStyle(.borderedProminent)
+                                    Button("Cancel") {
+                                        editingMemberId = nil // Exit edit mode
+                                    }
+                                    .buttonStyle(.bordered)
                                 }
-                                Spacer()
-                                Button("Save") {
-                                    validateAndSaveMember(member: member)
-                                }
-                                .buttonStyle(BorderlessButtonStyle())
                             } else {
-                                VStack(alignment: .leading) {
-                                    Text(member.name)
-                                    Text(member.email)
-                                        .foregroundColor(.gray)
+                                // Display Mode
+                                Text(member.name).font(.headline)
+                                Text(member.email).font(.subheadline).foregroundColor(.gray)
+
+                                HStack {
+                                    Button("Edit") {
+                                        startEditing(member: member)
+                                    }
+                                    .buttonStyle(.bordered)
+
+                                    Button("Delete") {
+                                        Task {
+                                            do {
+                                                try await viewModel.deleteMember(id: member.id)
+                                            } catch {
+                                                generalErrorMessage = "Failed to delete member: \(error.localizedDescription)"
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.red)
                                 }
-                                Spacer()
-                                Button("Edit") {
-                                    startEditing(member: member)
-                                }
-                                .buttonStyle(BorderlessButtonStyle())
                             }
-                        }
-                    }
-                    .onDelete { indexSet in
-                        indexSet.forEach { index in
-                            let member = viewModel.members[index]
-                            viewModel.deleteMember(id: member.id)
                         }
                     }
                 }
 
+                Divider()
+
                 VStack {
-                    // Add New Member Fields
+                    if let addErrorMessage = addErrorMessage {
+                        Text(addErrorMessage)
+                            .foregroundColor(.red)
+                    }
+
                     TextField("New Member Name", text: $newMemberName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     TextField("New Member Email", text: $newMemberEmail)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    if let addErrorMessage = addErrorMessage {
-                        Text(addErrorMessage)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                    }
-                    Button("Add") {
+                    Button("Add Member") {
                         validateAndAddMember()
                     }
+                    .buttonStyle(.borderedProminent)
                 }
                 .padding()
             }
@@ -106,24 +112,25 @@ struct MemberListView: View {
         editingMemberId = member.id
         editedMemberName = member.name
         editedMemberEmail = member.email
-        editErrorMessage = nil // Clear any previous errors
     }
 
-    private func validateAndSaveMember(member: Member) {
+    private func validateAndEditMember(member: Member) {
         guard !editedMemberName.isEmpty else {
-            editErrorMessage = "Member name cannot be empty."
+            generalErrorMessage = "Member name cannot be empty."
             return
         }
         guard !editedMemberEmail.isEmpty else {
-            editErrorMessage = "Member email cannot be empty."
+            generalErrorMessage = "Member email cannot be empty."
             return
         }
-        viewModel.editMember(id: member.id, newName: editedMemberName, newEmail: editedMemberEmail) { error in
-            if let error = error {
-                generalErrorMessage = "Failed to edit member: \(error.localizedDescription)"
-            } else {
+
+        Task {
+            do {
+                try await viewModel.editMember(id: member.id, name: editedMemberName, email: editedMemberEmail)
                 generalErrorMessage = nil
                 editingMemberId = nil // Exit edit mode
+            } catch {
+                generalErrorMessage = "Failed to edit member: \(error.localizedDescription)"
             }
         }
     }
@@ -137,19 +144,30 @@ struct MemberListView: View {
             addErrorMessage = "Member email cannot be empty."
             return
         }
-        viewModel.addMember(name: newMemberName, email: newMemberEmail) { error in
-            if let error = error {
-                generalErrorMessage = "Failed to add member: \(error.localizedDescription)"
-            } else {
+
+        Task {
+            do {
+                try await viewModel.addMember(name: newMemberName, email: newMemberEmail)
                 generalErrorMessage = nil
                 newMemberName = ""
                 newMemberEmail = ""
-                addErrorMessage = nil // Clear any errors
+            } catch {
+                generalErrorMessage = "Failed to add member: \(error.localizedDescription)"
             }
         }
     }
 }
 
-#Preview {
-    MemberListView()
+struct MemberListView_Previews: PreviewProvider {
+    static var previews: some View {
+        // Mock Data for Preview
+        let mockViewModel = MemberViewModel()
+        mockViewModel.members = [
+            Member(id: 1, name: "John Doe", email: "john.doe@example.com"),
+            Member(id: 2, name: "Jane Smith", email: "jane.smith@example.com"),
+        ]
+
+        return MemberListView()
+            .environmentObject(mockViewModel)
+    }
 }

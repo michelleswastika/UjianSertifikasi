@@ -9,19 +9,18 @@ import SwiftUI
 
 struct CategoryListView: View {
     @StateObject private var viewModel = CategoryViewModel()
+
     @State private var newCategoryName: String = ""
-    @State private var addErrorMessage: String?
-
-    @State private var editingCategoryId: Int? // Track the category being edited
     @State private var editedCategoryName: String = ""
-    @State private var editErrorMessage: String?
+    @State private var editingCategoryId: Int? = nil
 
-    @State private var generalErrorMessage: String? // General error messages for fetch or delete actions
+    @State private var addErrorMessage: String?
+    @State private var editErrorMessage: String?
+    @State private var generalErrorMessage: String?
 
     var body: some View {
         NavigationView {
             VStack {
-                // General Error Messages
                 if let generalErrorMessage = generalErrorMessage {
                     Text(generalErrorMessage)
                         .foregroundColor(.red)
@@ -30,55 +29,64 @@ struct CategoryListView: View {
 
                 List {
                     ForEach(viewModel.categories) { category in
-                        HStack {
+                        VStack(alignment: .leading) {
                             if editingCategoryId == category.id {
-                                // Inline editing mode
-                                TextField("Edit Category", text: $editedCategoryName)
+                                // Editing Mode
+                                TextField("Edit Category Name", text: $editedCategoryName)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .onSubmit {
+
+                                HStack {
+                                    Button("Save") {
                                         validateAndSaveCategory(category: category)
                                     }
-                                if let editErrorMessage = editErrorMessage {
-                                    Text(editErrorMessage)
-                                        .foregroundColor(.red)
-                                        .font(.caption)
+                                    .buttonStyle(.borderedProminent)
+
+                                    Button("Cancel") {
+                                        editingCategoryId = nil // Exit edit mode
+                                    }
+                                    .buttonStyle(.bordered)
                                 }
-                                Spacer()
-                                Button("Save") {
-                                    validateAndSaveCategory(category: category)
-                                }
-                                .buttonStyle(BorderlessButtonStyle())
                             } else {
-                                // Normal display mode
-                                Text(category.name)
-                                Spacer()
-                                Button("Edit") {
-                                    startEditing(category: category)
+                                // Display Mode
+                                Text(category.name).font(.headline)
+
+                                HStack {
+                                    Button("Edit") {
+                                        startEditing(category: category)
+                                    }
+                                    .buttonStyle(.bordered)
+
+                                    Button("Delete") {
+                                        Task {
+                                            do {
+                                                try await viewModel.deleteCategory(id: category.id)
+                                            } catch {
+                                                generalErrorMessage = "Failed to delete category: \(error.localizedDescription)"
+                                            }
+                                        }
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(.red)
                                 }
-                                .buttonStyle(BorderlessButtonStyle())
                             }
-                        }
-                    }
-                    .onDelete { indexSet in
-                        indexSet.forEach { index in
-                            let category = viewModel.categories[index]
-                            viewModel.deleteCategory(id: category.id)
                         }
                     }
                 }
 
+                Divider()
+
                 VStack {
-                    // Add New Category Field
-                    TextField("New Category Name", text: $newCategoryName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
                     if let addErrorMessage = addErrorMessage {
                         Text(addErrorMessage)
                             .foregroundColor(.red)
-                            .font(.caption)
                     }
-                    Button("Add") {
+
+                    TextField("New Category Name", text: $newCategoryName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    Button("Add Category") {
                         validateAndAddCategory()
                     }
+                    .buttonStyle(.borderedProminent)
                 }
                 .padding()
             }
@@ -98,7 +106,6 @@ struct CategoryListView: View {
     private func startEditing(category: Category) {
         editingCategoryId = category.id
         editedCategoryName = category.name
-        editErrorMessage = nil // Clear any previous errors
     }
 
     private func validateAndSaveCategory(category: Category) {
@@ -106,12 +113,14 @@ struct CategoryListView: View {
             editErrorMessage = "Category name cannot be empty."
             return
         }
-        viewModel.editCategory(id: category.id, newName: editedCategoryName) { error in
-            if let error = error {
-                generalErrorMessage = "Failed to edit category: \(error.localizedDescription)"
-            } else {
+
+        Task {
+            do {
+                try await viewModel.editCategory(id: category.id, newName: editedCategoryName)
                 generalErrorMessage = nil
                 editingCategoryId = nil // Exit edit mode
+            } catch {
+                generalErrorMessage = "Failed to edit category: \(error.localizedDescription)"
             }
         }
     }
@@ -121,18 +130,31 @@ struct CategoryListView: View {
             addErrorMessage = "Category name cannot be empty."
             return
         }
-        viewModel.addCategory(name: newCategoryName) { error in
-            if let error = error {
-                generalErrorMessage = "Failed to add category: \(error.localizedDescription)"
-            } else {
+
+        Task {
+            do {
+                try await viewModel.addCategory(name: newCategoryName)
                 generalErrorMessage = nil
                 newCategoryName = ""
                 addErrorMessage = nil // Clear any errors
+            } catch {
+                generalErrorMessage = "Failed to add category: \(error.localizedDescription)"
             }
         }
     }
 }
 
-#Preview {
-    CategoryListView()
+struct CategoryListView_Previews: PreviewProvider {
+    static var previews: some View {
+        // Mock ViewModel with Preloaded Data
+        let mockViewModel = CategoryViewModel()
+        mockViewModel.categories = [
+            Category(id: 1, name: "Fiction"),
+            Category(id: 2, name: "Non-fiction"),
+            Category(id: 3, name: "Science")
+        ]
+
+        return CategoryListView()
+            .environmentObject(mockViewModel)
+    }
 }

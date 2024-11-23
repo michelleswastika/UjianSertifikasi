@@ -13,9 +13,9 @@ class DatabaseManager {
     static let shared = DatabaseManager()
     private let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     private var connection: MySQLConnection?
-
+    
     init() {}
-
+    
     private func initializeConnection() async throws {
         if connection == nil {
             let futureConnection = MySQLConnection.connect(
@@ -30,7 +30,7 @@ class DatabaseManager {
             print("Successfully connected to the MySQL database!")
         }
     }
-
+    
     func executeQuery(_ query: String) async throws -> [MySQLRow] {
         try await initializeConnection()
         guard let connection = connection else {
@@ -38,7 +38,7 @@ class DatabaseManager {
         }
         return try await connection.query(query).get()
     }
-
+    
     func closeConnection() async {
         if let connection = connection {
             do {
@@ -49,7 +49,7 @@ class DatabaseManager {
             }
         }
     }
-
+    
     deinit {
         Task {
             await closeConnection()
@@ -104,11 +104,18 @@ extension DatabaseManager {
 extension DatabaseManager {
     func fetchBooks() async throws -> [Book] {
         let rows = try await executeQuery("SELECT id, title, author, member_id FROM books")
+        
         return rows.compactMap { row in
-            guard let id = row.column("id")?.int,
-                  let title = row.column("title")?.string,
-                  let author = row.column("author")?.string else { return nil }
-            return Book(id: id, title: title, author: author, memberId: row.column("member_id")?.int)
+            guard
+                let id = row.column("id")?.int,
+                let title = row.column("title")?.string,
+                let author = row.column("author")?.string
+            else {
+                return nil
+            }
+            
+            let memberId = row.column("member_id")?.int // Optional
+            return Book(id: id, title: title, author: author, memberId: memberId, categories: [])
         }
     }
     

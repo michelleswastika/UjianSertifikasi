@@ -5,7 +5,7 @@
 //  Created by Michelle Swastika on 23/11/24.
 //
 
-struct Category: Identifiable {
+struct Category: Identifiable, Hashable {
     let id: Int
-    var name: String
+    let name: String
 }

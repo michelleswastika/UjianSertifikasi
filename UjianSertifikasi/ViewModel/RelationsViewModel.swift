@@ -9,40 +9,97 @@ import Foundation
 
 class RelationsViewModel: ObservableObject {
     @Published var booksByCategory: [Book] = []
-    @Published var borrowedBooksByMember: [Book] = []
+    @Published var booksByMember: [Book] = []
 
     // Fetch books by category
     func fetchBooksByCategory(categoryId: Int) async throws {
         let rows = try await DatabaseManager.shared.executeQuery("""
-            SELECT b.id, b.title, b.author, b.member_id
+            SELECT 
+                b.id, b.title, b.author, b.member_id,
+                c.id AS category_id, c.name AS category_name
             FROM books b
-            JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
             WHERE bc.category_id = \(categoryId)
         """)
+
         DispatchQueue.main.async {
-            self.booksByCategory = rows.compactMap { row in
-                guard let id = row.column("id")?.int,
-                      let title = row.column("title")?.string,
-                      let author = row.column("author")?.string else { return nil }
-                return Book(id: id, title: title, author: author, memberId: row.column("member_id")?.int)
+            var bookDict: [Int: Book] = [:]
+
+            for row in rows {
+                guard
+                    let id = row.column("id")?.int,
+                    let title = row.column("title")?.string,
+                    let author = row.column("author")?.string
+                else { continue }
+
+                let memberId = row.column("member_id")?.int
+                let categoryId = row.column("category_id")?.int
+                let categoryName = row.column("category_name")?.string
+
+                if bookDict[id] == nil {
+                    bookDict[id] = Book(
+                        id: id,
+                        title: title,
+                        author: author,
+                        memberId: memberId,
+                        categories: []
+                    )
+                }
+
+                if let categoryId = categoryId, let categoryName = categoryName {
+                    let category = Category(id: categoryId, name: categoryName)
+                    bookDict[id]?.categories.append(category)
+                }
             }
+
+            self.booksByCategory = Array(bookDict.values)
         }
     }
 
-    // Fetch books borrowed by member
+    // Fetch books borrowed by a member
     func fetchBooksByMember(memberId: Int) async throws {
         let rows = try await DatabaseManager.shared.executeQuery("""
-            SELECT id, title, author, member_id
-            FROM books
-            WHERE member_id = \(memberId)
+            SELECT 
+                b.id, b.title, b.author, b.member_id,
+                c.id AS category_id, c.name AS category_name
+            FROM books b
+            LEFT JOIN book_categories bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            WHERE b.member_id = \(memberId)
         """)
+
         DispatchQueue.main.async {
-            self.borrowedBooksByMember = rows.compactMap { row in
-                guard let id = row.column("id")?.int,
-                      let title = row.column("title")?.string,
-                      let author = row.column("author")?.string else { return nil }
-                return Book(id: id, title: title, author: author, memberId: row.column("member_id")?.int)
+            var bookDict: [Int: Book] = [:]
+
+            for row in rows {
+                guard
+                    let id = row.column("id")?.int,
+                    let title = row.column("title")?.string,
+                    let author = row.column("author")?.string
+                else { continue }
+
+                let memberId = row.column("member_id")?.int
+                let categoryId = row.column("category_id")?.int
+                let categoryName = row.column("category_name")?.string
+
+                if bookDict[id] == nil {
+                    bookDict[id] = Book(
+                        id: id,
+                        title: title,
+                        author: author,
+                        memberId: memberId,
+                        categories: []
+                    )
+                }
+
+                if let categoryId = categoryId, let categoryName = categoryName {
+                    let category = Category(id: categoryId, name: categoryName)
+                    bookDict[id]?.categories.append(category)
+                }
             }
+
+            self.booksByMember = Array(bookDict.values)
         }
     }
 }
