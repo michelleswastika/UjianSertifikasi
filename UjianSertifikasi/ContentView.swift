@@ -9,13 +9,17 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        Text("Testing members fetch...")
+            .onAppear {
+                Task {
+                    await DatabaseManager.shared.testFetchMembers()
+                }
+            }
+            .onDisappear {
+                Task {
+                    await DatabaseManager.shared.closeConnection()
+                }
+            }
     }
 }
 

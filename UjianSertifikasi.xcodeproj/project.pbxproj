@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		48E87E082CF1D2FF002E2589 /* MySQLNIO in Frameworks */ = {isa = PBXBuildFile; productRef = 48E87E072CF1D2FF002E2589 /* MySQLNIO */; };
+		48E87E262CF20BBF002E2589 /* MySQLNIO in Frameworks */ = {isa = PBXBuildFile; productRef = 48E87E252CF20BBF002E2589 /* MySQLNIO */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				48E87E082CF1D2FF002E2589 /* MySQLNIO in Frameworks */,
+				48E87E262CF20BBF002E2589 /* MySQLNIO in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,7 +70,7 @@
 			);
 			name = UjianSertifikasi;
 			packageProductDependencies = (
-				48E87E072CF1D2FF002E2589 /* MySQLNIO */,
+				48E87E252CF20BBF002E2589 /* MySQLNIO */,
 			);
 			productName = UjianSertifikasi;
 			productReference = 48E87DF52CF1D063002E2589 /* UjianSertifikasi.app */;
@@ -101,7 +101,7 @@
 			mainGroup = 48E87DEC2CF1D063002E2589;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				48E87E062CF1D2FF002E2589 /* XCRemoteSwiftPackageReference "mysql-nio" */,
+				48E87E242CF20BBF002E2589 /* XCRemoteSwiftPackageReference "mysql-nio" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 48E87DF62CF1D063002E2589 /* Products */;
@@ -335,7 +335,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		48E87E062CF1D2FF002E2589 /* XCRemoteSwiftPackageReference "mysql-nio" */ = {
+		48E87E242CF20BBF002E2589 /* XCRemoteSwiftPackageReference "mysql-nio" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/vapor/mysql-nio.git";
 			requirement = {
@@ -346,9 +346,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		48E87E072CF1D2FF002E2589 /* MySQLNIO */ = {
+		48E87E252CF20BBF002E2589 /* MySQLNIO */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 48E87E062CF1D2FF002E2589 /* XCRemoteSwiftPackageReference "mysql-nio" */;
+			package = 48E87E242CF20BBF002E2589 /* XCRemoteSwiftPackageReference "mysql-nio" */;
 			productName = MySQLNIO;
 		};
 /* End XCSwiftPackageProductDependency section */
