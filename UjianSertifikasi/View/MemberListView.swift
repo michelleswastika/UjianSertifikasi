@@ -9,7 +9,6 @@ import SwiftUI
 
 struct MemberListView: View {
     @StateObject private var viewModel = MemberViewModel()
-
     @State private var newMemberName: String = ""
     @State private var newMemberEmail: String = ""
     @State private var editingMemberId: Int? = nil
@@ -31,45 +30,81 @@ struct MemberListView: View {
                 List {
                     ForEach(viewModel.members) { member in
                         VStack(alignment: .leading) {
-                            if editingMemberId == member.id {
-                                // Editing Mode
-                                TextField("Edit Member Name", text: $editedMemberName)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                TextField("Edit Member Email", text: $editedMemberEmail)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                            Text(member.name).font(.headline)
+                            Text(member.email).font(.subheadline).foregroundColor(.gray)
 
-                                HStack {
-                                    Button("Save") {
-                                        validateAndEditMember(member: member)
-                                    }
-                                    .buttonStyle(.borderedProminent)
-                                    Button("Cancel") {
-                                        editingMemberId = nil // Exit edit mode
-                                    }
-                                    .buttonStyle(.bordered)
-                                }
-                            } else {
-                                // Display Mode
-                                Text(member.name).font(.headline)
-                                Text(member.email).font(.subheadline).foregroundColor(.gray)
+                            // Navigation to Borrowed Books
+                            NavigationLink(destination: BorrowedBooksView(member: member)) {
+                                Text("View Borrowed Books")
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
+                            }
+                            .buttonStyle(PlainButtonStyle()) // To remove the default button style
 
-                                HStack {
-                                    Button("Edit") {
-                                        startEditing(member: member)
-                                    }
-                                    .buttonStyle(.bordered)
+                            // Edit and Delete Buttons
+                            VStack(alignment: .leading) {
+                                if editingMemberId == member.id {
+                                    // Editing member in place
+                                    TextField("Name", text: $editedMemberName)
+                                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                                        .padding(.top, 5)
 
-                                    Button("Delete") {
+                                    TextField("Email", text: $editedMemberEmail)
+                                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                                        .padding(.top, 5)
+
+                                    Button(action: {
                                         Task {
                                             do {
-                                                try await viewModel.deleteMember(id: member.id)
+                                                // Save the changes
+                                                try await viewModel.editMember(id: member.id, name: editedMemberName, email: editedMemberEmail)
+                                                editingMemberId = nil // Close the editing mode
                                             } catch {
-                                                generalErrorMessage = "Failed to delete member: \(error.localizedDescription)"
+                                                print("Failed to edit member: \(error.localizedDescription)")
                                             }
                                         }
+                                    }) {
+                                        Text("Save Changes")
+                                            .foregroundColor(.blue)
                                     }
-                                    .buttonStyle(.borderedProminent)
-                                    .tint(.red)
+
+                                    Button(action: {
+                                        // Cancel the editing
+                                        editingMemberId = nil
+                                    }) {
+                                        Text("Cancel")
+                                            .foregroundColor(.gray)
+                                    }
+                                } else {
+                                    // Default state - show Edit and Delete buttons
+                                    HStack {
+                                        Button(action: {
+                                            // Set the current member in edit mode
+                                            editingMemberId = member.id
+                                            editedMemberName = member.name
+                                            editedMemberEmail = member.email
+                                        }) {
+                                            Text("Edit")
+                                                .foregroundColor(.blue)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+
+                                        Button(role: .destructive, action: {
+                                            Task {
+                                                do {
+                                                    // Delete the member
+                                                    try await viewModel.deleteMember(id: member.id)
+                                                } catch {
+                                                    print("Failed to delete member: \(error.localizedDescription)")
+                                                }
+                                            }
+                                        }) {
+                                            Text("Delete")
+                                                .foregroundColor(.red)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                    .padding(.top, 5)
                                 }
                             }
                         }
@@ -104,33 +139,6 @@ struct MemberListView: View {
                         generalErrorMessage = "Failed to load members: \(error.localizedDescription)"
                     }
                 }
-            }
-        }
-    }
-
-    private func startEditing(member: Member) {
-        editingMemberId = member.id
-        editedMemberName = member.name
-        editedMemberEmail = member.email
-    }
-
-    private func validateAndEditMember(member: Member) {
-        guard !editedMemberName.isEmpty else {
-            generalErrorMessage = "Member name cannot be empty."
-            return
-        }
-        guard !editedMemberEmail.isEmpty else {
-            generalErrorMessage = "Member email cannot be empty."
-            return
-        }
-
-        Task {
-            do {
-                try await viewModel.editMember(id: member.id, name: editedMemberName, email: editedMemberEmail)
-                generalErrorMessage = nil
-                editingMemberId = nil // Exit edit mode
-            } catch {
-                generalErrorMessage = "Failed to edit member: \(error.localizedDescription)"
             }
         }
     }

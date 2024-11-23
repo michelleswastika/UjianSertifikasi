@@ -71,7 +71,7 @@ class BookViewModel: ObservableObject {
         try await fetchBooks()
     }
 
-    // Edit a book
+    // Edit book
     func editBook(id: Int, title: String, author: String, categoryIds: [Int]) async throws {
         // Update the book
         let updateQuery = """
@@ -98,7 +98,7 @@ class BookViewModel: ObservableObject {
         try await fetchBooks()
     }
 
-    // Delete a book
+    // Delete book
     func deleteBook(id: Int) async throws {
         let query = "DELETE FROM books WHERE id = \(id)"
         try await DatabaseManager.shared.executeQuery(query)

@@ -63,11 +63,11 @@ struct BookListView: View {
                         } label: {
                             Label("Edit", systemImage: "pencil")
                         }
-                        .tint(.blue) // Edit button color
+                        .tint(.blue)
                     }
                 }
 
-                // NavigationLink to navigate to AddEditBookView
+                // Navigate to AddEditBookView
                 NavigationLink(
                     destination: AddEditBookView(
                         isAdding: false,
@@ -119,7 +119,7 @@ struct BookListView: View {
         }
     }
 
-    // Computed property to filter and search books
+    // Filter Books by Category
     private var filteredBooks: [Book] {
         let booksFilteredByCategory: [Book]
         if let selectedCategory = selectedCategory {

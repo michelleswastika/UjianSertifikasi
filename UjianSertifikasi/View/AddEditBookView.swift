@@ -16,7 +16,7 @@ struct AddEditBookView: View {
     @State private var author: String = ""
     @State private var selectedCategories: [Category] = []
     @Environment(\.dismiss) private var dismiss
-    @State private var isInitialized = false // Tracks whether the state is initialized
+    @State private var isInitialized = false
 
     var body: some View {
         VStack {

@@ -9,11 +9,9 @@ import SwiftUI
 
 struct CategoryListView: View {
     @StateObject private var viewModel = CategoryViewModel()
-
     @State private var newCategoryName: String = ""
     @State private var editedCategoryName: String = ""
     @State private var editingCategoryId: Int? = nil
-
     @State private var addErrorMessage: String?
     @State private var editErrorMessage: String?
     @State private var generalErrorMessage: String?
@@ -34,6 +32,12 @@ struct CategoryListView: View {
                                 // Editing Mode
                                 TextField("Edit Category Name", text: $editedCategoryName)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
+
+                                if let errorMessage = editErrorMessage {
+                                    Text(errorMessage)
+                                        .foregroundColor(.red)
+                                        .font(.footnote)
+                                }
 
                                 HStack {
                                     Button("Save") {
@@ -83,6 +87,7 @@ struct CategoryListView: View {
 
                     TextField("New Category Name", text: $newCategoryName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+
                     Button("Add Category") {
                         validateAndAddCategory()
                     }
@@ -146,15 +151,6 @@ struct CategoryListView: View {
 
 struct CategoryListView_Previews: PreviewProvider {
     static var previews: some View {
-        // Mock ViewModel with Preloaded Data
-        let mockViewModel = CategoryViewModel()
-        mockViewModel.categories = [
-            Category(id: 1, name: "Fiction"),
-            Category(id: 2, name: "Non-fiction"),
-            Category(id: 3, name: "Science")
-        ]
-
-        return CategoryListView()
-            .environmentObject(mockViewModel)
+        CategoryListView()
     }
 }

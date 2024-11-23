@@ -31,11 +31,6 @@ struct SelectCategoryView: View {
         }
         .navigationBarTitle("Select Category", displayMode: .inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Save") {
                     dismiss()

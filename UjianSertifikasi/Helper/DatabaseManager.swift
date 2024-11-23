@@ -13,9 +13,9 @@ class DatabaseManager {
     static let shared = DatabaseManager()
     private let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     private var connection: MySQLConnection?
-    
+
     init() {}
-    
+
     private func initializeConnection() async throws {
         if connection == nil {
             let futureConnection = MySQLConnection.connect(
@@ -30,7 +30,7 @@ class DatabaseManager {
             print("Successfully connected to the MySQL database!")
         }
     }
-    
+
     func executeQuery(_ query: String) async throws -> [MySQLRow] {
         try await initializeConnection()
         guard let connection = connection else {
@@ -38,7 +38,7 @@ class DatabaseManager {
         }
         return try await connection.query(query).get()
     }
-    
+
     func closeConnection() async {
         if let connection = connection {
             do {
@@ -49,12 +49,12 @@ class DatabaseManager {
             }
         }
     }
-    
+
     deinit {
         Task {
             await closeConnection()
             do {
-                try self.eventLoopGroup.syncShutdownGracefully()
+                try self.eventLoopGroup.syncShutdownGracefully() // Graceful shutdown of the event loop group
             } catch {
                 print("Failed to shut down event loop group: \(error)")
             }
